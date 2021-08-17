@@ -15,6 +15,16 @@ register(
 )
 
 register(
+    id='trading-v0',
+    entry_point='gym_anytrading.envs:TradingEnv',
+    kwargs={
+        #'df': deepcopy(datasets.FOREX_EURUSD_1H_ASK),
+        #'window_size': 24,
+        #'frame_bound': (24, len(datasets.FOREX_EURUSD_1H_ASK))
+    }
+)
+
+register(
     id='stocks-v0',
     entry_point='gym_anytrading.envs:StocksEnv',
     kwargs={

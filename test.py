@@ -2,13 +2,16 @@ import gym
 import gym_anytrading
 
 # Using penalty env
-env = gym.make('stocks-v0')
+env = gym.make('trading-v0')
 
-dataset = env.readData()
-env.reset()
+#dataset = env.readData()
 # Run for 1 episode and print reward at the end
 nEpisodes = 1
-for line in dataset:
-  action = env.action_space.sample()
-  next_state, reward, done, _ = env.step(action, line)
-  print(reward)
+for i in range(nEpisodes):
+  env.reset()
+  done = False
+  while not done:
+    action = env.action_space.sample()
+    #print(action)
+    next_state, reward, done, _ = env.step(action)
+    print(reward)
