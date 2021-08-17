@@ -6,60 +6,27 @@ from enum import Enum
 import matplotlib.pyplot as plt
 import csv
 
-class Actions(Enum):
-    Sell = 0
-    Buy = 1
-
-
-class Positions(Enum):
-    Short = 0
-    Long = 1
-
-    def opposite(self):
-        return Positions.Short if self == Positions.Long else Positions.Long
-
-
 class TradingEnv(gym.Env):
 
-    metadata = {'render.modes': ['human']}
-
     def __init__(self):
-        #assert df.ndim == 2
-        #
-        #self.seed()
-        #self.df = df
-        #self.window_size = window_size
-        #self.prices, self.signal_features = self._process_data()
-        #self.shape = (window_size, self.signal_features.shape[1])
+        self.n_stocks = 10
+        self.W = 3
+        self.count = 0
+        self.max_steps = None
+        self.action = [1]+[1/self.n_stocks]*self.n_stocks
+        self.state = None
 
         ## spaces
-        self.action_space = spaces.Discrete(len(Actions))
-        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=self.shape, dtype=np.float32)
-        self.holdings = 0
-        self.balance = 0
-        self.portifolio  = 10000
-
-        ## episode
-        #self._start_tick = self.window_size
-        #self._end_tick = len(self.prices) - 1
-        #self._done = None
-        #self._current_tick = None
-        #self._last_trade_tick = None
-        #self._position = None
-        #self._position_history = None
-        #self._total_reward = None
-        #self._total_profit = None
-        #self._first_rendering = None
-        #self.history = None
-        pass
+        self.action_space = spaces.Box(low=0, high=1.0, shape=(self.n_stocks+1,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=0.0, high=np.inf, shape=(self.n_stocks+1, self.W), dtype=np.float32)
+        
 
     def seed(self, seed=None):
-        #self.np_random, seed = seeding.np_random(seed)
-        #return [seed]
         pass
 
 
     def reset(self):
+        self.count = 0
         #self._done = False
         #self._current_tick = self._start_tick
         #self._last_trade_tick = self._current_tick - 1
@@ -75,9 +42,14 @@ class TradingEnv(gym.Env):
     def receive_state(self, action, data):
         self.holdings = self.holdings - action
 
-    def calculate_reward(self, data):
-        valueOfHolding = data["Close"]
-        self.portifolio = valueOfHolding*self.holdings
+    def calculate_reward(self):
+        reward = np.log(self.beta*np.dot(self.state[0], self.action))
+        done = False
+        if(self.count>=self.max_steps):
+            done = True
+        return reward, done
+        #valueOfHolding = data["Close"]
+        #self.portifolio = valueOfHolding*self.holdings
         
 
 
@@ -85,12 +57,13 @@ class TradingEnv(gym.Env):
     def step(self, action, data):
         state = self.receive_state(action, data)
         #print(state)
-        reward, done = self.compute_metrics(self.history,state)
-        self.history.insert(0, [self.count, state, reward])
-        if(len(self.history)>3):
-            self.history.pop(3)
-        #print(self.history[0][1])
         self.count +=1
+
+        reward, done = self.calculate_reward()
+        #self.history.insert(0, [self.count, state, reward])
+        #if(len(self.history)>3):
+        #    self.history.pop(3)
+        #print(self.history[0][1])
 
         #self._done = False
         #self._current_tick += 1
@@ -121,7 +94,7 @@ class TradingEnv(gym.Env):
         #)
         #self._update_history(info)
 
-        #return observation, step_reward, self._done, info
+        return observation, step_reward, self._done, []
 
 
    
