@@ -9,8 +9,10 @@ gym_anytrading.egg-info/top_level.txt
 gym_anytrading/datasets/__init__.py
 gym_anytrading/datasets/utils.py
 gym_anytrading/datasets/data/FOREX_EURUSD_1H_ASK.csv
+gym_anytrading/datasets/data/STOCKS_AMBEV.csv
 gym_anytrading/datasets/data/STOCKS_GOOGL.csv
 gym_anytrading/envs/__init__.py
 gym_anytrading/envs/forex_env.py
 gym_anytrading/envs/stocks_env.py
+gym_anytrading/envs/tiago_env.py
 gym_anytrading/envs/trading_env.py
