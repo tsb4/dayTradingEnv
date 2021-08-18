@@ -6,7 +6,7 @@ env = gym.make('trading-v0')
 
 #dataset = env.readData()
 # Run for 1 episode and print reward at the end
-nEpisodes = 1
+nEpisodes = 98
 for i in range(nEpisodes):
   env.reset()
   done = False

@@ -1,25 +1,32 @@
 import gym
 from gym import spaces
 from gym.utils import seeding
+import pandas as pd
 import numpy as np
 from enum import Enum
 import matplotlib.pyplot as plt
 import csv
+import gym_anytrading.datasets.b3 as b3
 
 class TradingEnv(gym.Env):
 
     def __init__(self):
         self.n_stocks = 10
-        self.W = 3
+        self.W = 2
         self.count = 0
-        self.max_steps = None
-        self.action = [1]+[1/self.n_stocks]*self.n_stocks
+        self.count_episodes = -1
+        self.max_steps = 5
+        #self.action = [1/(self.n_stocks+1)]*(self.n_stocks+1)
         self.state = None
+        csv_filename = 'gym_anytrading/datasets/data/B3_COTAHIST.csv'
+        self.df = pd.read_csv(csv_filename, parse_dates=True, index_col='Date')
+        #print(self.df.head())
+
 
         ## spaces
         self.action_space = spaces.Box(low=0, high=1.0, shape=(self.n_stocks+1,), dtype=np.float32)
-        self.observation_space = spaces.Box(low=0.0, high=np.inf, shape=(self.n_stocks+1, self.W), dtype=np.float32)
-        
+        self.observation_space = spaces.Box(low=0.0, high=np.inf, shape=(self.W, self.n_stocks+1), dtype=np.float32)
+        self.beta = 1 - 0.0002
 
     def seed(self, seed=None):
         pass
@@ -27,6 +34,7 @@ class TradingEnv(gym.Env):
 
     def reset(self):
         self.count = 0
+        self.count_episodes += 1
         #self._done = False
         #self._current_tick = self._start_tick
         #self._last_trade_tick = self._current_tick - 1
@@ -37,16 +45,57 @@ class TradingEnv(gym.Env):
         #self._first_rendering = True
         #self.history = {}
         #return self._get_observation()
-        pass
+        #pass
+    def normalizeAction(self, action):
+        new_action = []
+        action = np.array(action)
+        for i in action: #range(len(action)):
+            new_action.append(i/action.sum())
+        #print(new_action, np.array(new_action).sum())
+        return new_action
 
-    def receive_state(self, action, data):
-        self.holdings = self.holdings - action
+    def receive_state(self, action):
+        state = []
+        #print("AQUI.......")
+        for j in range(self.W, -1, -1):
+            start_point =self.n_stocks*self.W + self.count_episodes*self.max_steps*self.n_stocks + (self.count-j)*self.n_stocks
+            df_new = self.df.iloc[start_point:start_point+10]
+            df_new = df_new.iloc[:,[1,4]] 
+            #print(self.count, df_new)
+            obs = [1]
+            for i in range(self.n_stocks):
+                #print(line)
+                obs.append(df_new.iloc[i, 1]/df_new.iloc[i, 0])
+            #print(obs)
+            state.append(np.array(obs))
+        #print(np.array(state))
+        return np.array(state)
 
-    def calculate_reward(self):
-        reward = np.log(self.beta*np.dot(self.state[0], self.action))
+
+        #start_point = self.count_episodes*self.max_steps*self.n_stocks + self.count*self.n_stocks
+        #df_new = self.df.iloc[start_point:start_point+10]
+        #df_new = df_new.iloc[:,[1,4]] 
+        #print(self.count, df_new)
+        #obs = [1]
+        #for i in range(self.n_stocks):
+        #    #print(line)
+        #    obs.append(df_new.iloc[i, 1]/df_new.iloc[i, 0])
+        #print(obs)
+        #state.append(obs)
+
+        #self.holdings = self.holdings - 
+        #new_action = normalizeAction(action)
+
+        return []
+
+    def calculate_reward(self, action):
+        #self.state = self.observation_space.sample()
+        #print(self.state)
+        reward = np.log(self.beta*np.dot(self.state[0], action))
         done = False
         if(self.count>=self.max_steps):
             done = True
+        #print("REWARD ", reward)
         return reward, done
         #valueOfHolding = data["Close"]
         #self.portifolio = valueOfHolding*self.holdings
@@ -54,12 +103,13 @@ class TradingEnv(gym.Env):
 
 
 
-    def step(self, action, data):
-        state = self.receive_state(action, data)
+    def step(self, action):
+        action = self.normalizeAction(action)
+        self.state = self.receive_state(action)
         #print(state)
         self.count +=1
 
-        reward, done = self.calculate_reward()
+        reward, done = self.calculate_reward(action)
         #self.history.insert(0, [self.count, state, reward])
         #if(len(self.history)>3):
         #    self.history.pop(3)
@@ -94,7 +144,7 @@ class TradingEnv(gym.Env):
         #)
         #self._update_history(info)
 
-        return observation, step_reward, self._done, []
+        return self.state, reward, done, []
 
 
    
