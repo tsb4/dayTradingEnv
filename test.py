@@ -14,4 +14,4 @@ for i in range(nEpisodes):
     action = env.action_space.sample()
     #print(action)
     next_state, reward, done, _ = env.step(action)
-    print(reward)
+    #print(reward)

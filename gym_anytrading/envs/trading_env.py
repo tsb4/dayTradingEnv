@@ -18,15 +18,16 @@ class TradingEnv(gym.Env):
         self.max_steps = 5
         #self.action = [1/(self.n_stocks+1)]*(self.n_stocks+1)
         self.state = None
-        csv_filename = 'gym_anytrading/datasets/data/B3_COTAHIST.csv'
+        csv_filename = '../../../gym_anytrading/datasets/data/B3_COTAHIST.csv'
+        #csv_filename = 'gym_anytrading/datasets/data/B3_COTAHIST.csv'
         self.df = pd.read_csv(csv_filename, parse_dates=True, index_col='Date')
         #print(self.df.head())
 
 
         ## spaces
         self.action_space = spaces.Box(low=0, high=1.0, shape=(self.n_stocks+1,), dtype=np.float32)
-        self.observation_space = spaces.Box(low=0.0, high=np.inf, shape=(self.W, self.n_stocks+1), dtype=np.float32)
-        self.beta = 1 - 0.0002
+        self.observation_space = spaces.Box(low=0.0, high=10.0, shape=((self.W+1)*(self.n_stocks+1), ), dtype=np.float32)
+        self.beta = 1
 
     def seed(self, seed=None):
         pass
@@ -35,6 +36,7 @@ class TradingEnv(gym.Env):
     def reset(self):
         self.count = 0
         self.count_episodes += 1
+        return self.receive_state().flatten()
         #self._done = False
         #self._current_tick = self._start_tick
         #self._last_trade_tick = self._current_tick - 1
@@ -54,7 +56,7 @@ class TradingEnv(gym.Env):
         #print(new_action, np.array(new_action).sum())
         return new_action
 
-    def receive_state(self, action):
+    def receive_state(self):
         state = []
         #print("AQUI.......")
         for j in range(self.W, -1, -1):
@@ -91,7 +93,7 @@ class TradingEnv(gym.Env):
     def calculate_reward(self, action):
         #self.state = self.observation_space.sample()
         #print(self.state)
-        reward = np.log(self.beta*np.dot(self.state[0], action))
+        reward = self.beta*np.dot(self.state[-1], action)
         done = False
         if(self.count>=self.max_steps):
             done = True
@@ -105,7 +107,7 @@ class TradingEnv(gym.Env):
 
     def step(self, action):
         action = self.normalizeAction(action)
-        self.state = self.receive_state(action)
+        self.state = self.receive_state()
         #print(state)
         self.count +=1
 
@@ -144,7 +146,7 @@ class TradingEnv(gym.Env):
         #)
         #self._update_history(info)
 
-        return self.state, reward, done, []
+        return self.state.flatten(), reward, done, []
 
 
    

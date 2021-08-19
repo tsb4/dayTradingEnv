@@ -88,7 +88,7 @@ def main():
     include_list = {year: set([s for y in ys for s in top_ten_stocks[y]]) for year, ys in test_years.items()}
 
     start = timer()
-    gen_b3_cotahist_csv(b3_cotahist_urls, csv_filename, include_list)
+    #gen_b3_cotahist_csv(b3_cotahist_urls, csv_filename, include_list)
     print("Parse time: {:.3f}s".format(timer() - start))
 
     start = timer()
@@ -96,7 +96,9 @@ def main():
     print("Read time: {:.3f}s\n".format(timer() - start))
 
     print('Pandas DataFrame:')
-    print(df)
+    print(df.head())
+    print(df.date.dtypes)
+    return df
 
 
 if __name__ == '__main__':

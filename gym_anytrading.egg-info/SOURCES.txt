@@ -7,7 +7,9 @@ gym_anytrading.egg-info/dependency_links.txt
 gym_anytrading.egg-info/requires.txt
 gym_anytrading.egg-info/top_level.txt
 gym_anytrading/datasets/__init__.py
+gym_anytrading/datasets/b3.py
 gym_anytrading/datasets/utils.py
+gym_anytrading/datasets/data/B3_COTAHIST.csv
 gym_anytrading/datasets/data/FOREX_EURUSD_1H_ASK.csv
 gym_anytrading/datasets/data/STOCKS_AMBEV.csv
 gym_anytrading/datasets/data/STOCKS_GOOGL.csv
