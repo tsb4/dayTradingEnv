@@ -1,0 +1,10 @@
+.idea/
+.vscode/
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.ipynb_checkpoints/
+.venv/
+venv/
