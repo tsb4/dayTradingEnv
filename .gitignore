@@ -8,3 +8,5 @@ __pycache__/
 .ipynb_checkpoints/
 .venv/
 venv/
+
+environments/dataset/zips
