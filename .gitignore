@@ -1,12 +1,11 @@
-.idea/
-.vscode/
+**/*
+!**/
 
-__pycache__/
-*.py[cod]
-*$py.class
-*.egg-info/
-.ipynb_checkpoints/
-.venv/
-venv/
-
-environments/dataset/zips
+!/environments/*.py
+!/environments/dataset/*.py
+!/environments/dataset/data/*.csv
+!/model/*.py
+!/.gitignore
+!/README.md
+!/main.py
+!/setup.py
