@@ -14,7 +14,7 @@ from model.replay_buffer import ReplayBuffer
 
 class DDPGAgent:
     def __init__(self, env: gym.Env, gamma=.99, tau=.001, actor_learning_rate=.0001, critic_learning_rate=.001,
-                 buffer_size=1000000, batch_size=64, lstm_units=50, fc1_units=50, fc2_units=25, ou_sigma=.3,
+                 buffer_size=1000000, batch_size=64, lstm_units=40, fc1_units=40, fc2_units=20, ou_sigma=.1,
                  weights_dir='out.ddpg'):
         self.env = env
         self.gamma = gamma
@@ -33,17 +33,17 @@ class DDPGAgent:
         self.target_actor = ActorNetwork(**self.actor.get_config(), name='target_actor')
         self.target_critic = CriticNetwork(**self.critic.get_config(), name='target_critic')
 
+        self.actor.compile(optimizer=Adam(learning_rate=actor_learning_rate))
+        self.critic.compile(optimizer=Adam(learning_rate=critic_learning_rate))
+        self.target_actor.compile(optimizer=Adam(learning_rate=actor_learning_rate))
+        self.target_critic.compile(optimizer=Adam(learning_rate=critic_learning_rate))
+
         self.actor(np.zeros((batch_size, *env.observation_space.shape)))
         self.critic((np.zeros((batch_size, *env.observation_space.shape)),
                      np.zeros((batch_size, *env.action_space.shape))))
         self.target_actor(np.zeros((batch_size, *env.observation_space.shape)))
         self.target_critic((np.zeros((batch_size, *env.observation_space.shape)),
                             np.zeros((batch_size, *env.action_space.shape))))
-
-        self.actor.compile(optimizer=Adam(learning_rate=actor_learning_rate))
-        self.critic.compile(optimizer=Adam(learning_rate=critic_learning_rate))
-        self.target_actor.compile(optimizer=Adam(learning_rate=actor_learning_rate))
-        self.target_critic.compile(optimizer=Adam(learning_rate=critic_learning_rate))
 
         self.update_target_networks(tau=1)
 

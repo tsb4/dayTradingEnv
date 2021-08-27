@@ -21,13 +21,14 @@ def ddpg_train(year: int, episodes: int = 100):
 
     last_ep = 0
     reward_history = []
+    test_portfolio_values = []
     save_dir, index = __get_save_dir()
     ddpg_agent = DDPGAgent(env)
     max_step = len(env.df) - 1
 
     try:
         for ep in range(1, episodes + 1):
-            observation = env.reset(add_noise=True)
+            observation = env.reset()
             done = False
             info = None
 
@@ -55,10 +56,13 @@ def ddpg_train(year: int, episodes: int = 100):
             ddpg_agent.save_weights(path.join(save_dir, 'weights', f"ep{ep}"))
             reward_history.append(info['total_reward'])
 
-            __plot(f"Training {index}: Reward History", '', reward_history, path.join(save_dir, 'reward_history.png'))
+            __plot(f"Training {index}: Reward history", '', reward_history, path.join(save_dir, 'reward_history.png'))
             __plot(title, subtitle, env.portfolio_value_hist, path.join(save_dir, 'train_plots', f"ep{ep}.png"))
 
-            ddpg_test(year, index, ep, ddpg_agent, training=True)
+            test_portfolio_values.append(ddpg_test(year, index, ep, ddpg_agent, training=True))
+
+            __plot(f"Testing {index}: Portfolio value history", '', test_portfolio_values,
+                   path.join(save_dir, 'portfolio_value_history.training.png'))
 
             last_ep = ep
     except KeyboardInterrupt:
@@ -87,12 +91,13 @@ def ddpg_test(year: int, index, ep, ddpg_agent: DDPGAgent = None, training=False
     max_step = len(env.df) - 1
     obs = env.reset()
     done = False
+    info = None
     subtitle = ''
     progress = ''
 
     if not training:
         title = f"Testing {index}"
-        plot_filename = path.join(save_dir, 'portfolio_value_hist.png')
+        plot_filename = path.join(save_dir, 'portfolio_value_history.png')
     else:
         title = f"Testing {index}: Episode {ep}"
         plot_filename = path.join(save_dir, 'test_plots', f"ep{ep}.png")
@@ -111,6 +116,8 @@ def ddpg_test(year: int, index, ep, ddpg_agent: DDPGAgent = None, training=False
 
     __plot(title, subtitle, env.portfolio_value_hist, plot_filename, color='r')
 
+    return info['portfolio_value']
+
 
 def __get_save_dir(out_dir='out.ddpg', index=None):
     makedirs(out_dir, exist_ok=True)
@@ -127,7 +134,7 @@ def __get_save_dir(out_dir='out.ddpg', index=None):
     return save_dir, index
 
 
-def __plot(title, subtitle, data, filename, color=None):
+def __plot(title, subtitle, data, filename, color=None, show=True):
     makedirs(path.dirname(filename), exist_ok=True)
 
     plt.suptitle(title, fontsize=12)
@@ -136,7 +143,10 @@ def __plot(title, subtitle, data, filename, color=None):
     plt.grid()
     plt.plot(data, color=color)
     plt.savefig(filename)
-    plt.show()
+
+    if show:
+        plt.show()
+
     plt.close()
 
 
