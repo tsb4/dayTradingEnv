@@ -33,6 +33,13 @@ class DDPGAgent:
         self.target_actor = ActorNetwork(**self.actor.get_config(), name='target_actor')
         self.target_critic = CriticNetwork(**self.critic.get_config(), name='target_critic')
 
+        self.actor(np.zeros((batch_size, *env.observation_space.shape)))
+        self.critic((np.zeros((batch_size, *env.observation_space.shape)),
+                     np.zeros((batch_size, *env.action_space.shape))))
+        self.target_actor(np.zeros((batch_size, *env.observation_space.shape)))
+        self.target_critic((np.zeros((batch_size, *env.observation_space.shape)),
+                            np.zeros((batch_size, *env.action_space.shape))))
+
         self.actor.compile(optimizer=Adam(learning_rate=actor_learning_rate))
         self.critic.compile(optimizer=Adam(learning_rate=critic_learning_rate))
         self.target_actor.compile(optimizer=Adam(learning_rate=actor_learning_rate))
@@ -100,14 +107,6 @@ class DDPGAgent:
         self.target_critic.save_weights(weights_dir)
 
     def load_weights(self, weights_dir=None):
-        observation_shape = self.env.observation_space.shape
-        action_shape = self.env.action_space.shape
-
-        self.actor(np.zeros((1, *observation_shape)))
-        self.critic((np.zeros((1, *observation_shape)), np.zeros((1, *action_shape))))
-        self.target_actor(np.zeros((1, *observation_shape)))
-        self.target_critic((np.zeros((1, *observation_shape)), np.zeros((1, *action_shape))))
-
         self.actor.load_weights(weights_dir)
         self.critic.load_weights(weights_dir)
         self.target_actor.load_weights(weights_dir)

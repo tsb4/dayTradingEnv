@@ -46,9 +46,14 @@ class DayTradingEnv(gym.Env):
 
         return self.__normalize_observation(self.observation), reward, done, info
 
-    def reset(self):
+    def reset(self, add_noise=False):
+        df = self.df.copy()
+
+        if add_noise:
+            df += np.random.normal(scale=.001, size=df.shape)
+
         self.step_count = 0
-        self.observations = [w for w in self.df.rolling(self.W)]
+        self.observations = [w for w in df.rolling(self.W)]
         self.observation = self.__get_observation()
         self.total_reward = 0
         self.portfolio_value = 1

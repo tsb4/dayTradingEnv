@@ -11,24 +11,29 @@ def __main__():
     year = 2017
     episodes = 100
 
-    index, ep = ddpg_train(year, episodes)
-    ddpg_test(year, index, ep)
+    index, last_ep = ddpg_train(year, episodes)
+    ddpg_test(year, index, last_ep)
 
 
 def ddpg_train(year: int, episodes: int = 100):
     env = gym.make('DayTrading-v0', df=B3_STOCKS, stock_symbols=top_ten_stocks[str(year)],
                    date_range=(f"{year - 2}-01-01", f"{year - 1}-12-31"), window_length=3)
 
-    ep = 0
+    last_ep = 0
     reward_history = []
     save_dir, index = __get_save_dir()
     ddpg_agent = DDPGAgent(env)
+    max_step = len(env.df) - 1
 
     try:
         for ep in range(1, episodes + 1):
-            observation = env.reset()
+            observation = env.reset(add_noise=True)
             done = False
             info = None
+
+            title = f"Training {index}: Episode {ep}"
+            subtitle = ''
+            progress = ''
 
             while not done:
                 action = ddpg_agent.predict(observation, add_noise=True)
@@ -38,35 +43,35 @@ def ddpg_train(year: int, episodes: int = 100):
                 ddpg_agent.learn()
 
                 observation = next_observation
-                print('.' if env.step_count % 6 == 0 else '', end='', flush=True)
 
-            reward_history.append(info['total_reward'])
+                subtitle = f"Portfolio value: {info['portfolio_value']:.5f}"
+                progress = f"{title} {env.step_count}/{max_step} - {subtitle}"
+                print(f"\r{progress}", end='', flush=True)
+            else:
+                print('\r', ' ' * len(progress), end='', flush=True)
 
-            title = f"Training {index}: Episode {ep}"
-            subtitle = f"Portfolio value: {info['portfolio_value']}"
-
-            print(f"\n{title} - {subtitle}")
-
-            __plot(f"Training {index}: Reward History", '', reward_history, path.join(save_dir, 'reward_hist.png'))
-            __plot(title, subtitle, env.portfolio_value_hist, path.join(save_dir, 'train_plots', f"ep{ep}.png"))
+            print(f"\r{title} - {subtitle}")
 
             ddpg_agent.save_weights(path.join(save_dir, 'weights', f"ep{ep}"))
+            reward_history.append(info['total_reward'])
 
-            if ep == 1 or ep % 5 == 0:
-                ddpg_test(year, index, ep, ddpg_agent)
+            __plot(f"Training {index}: Reward History", '', reward_history, path.join(save_dir, 'reward_history.png'))
+            __plot(title, subtitle, env.portfolio_value_hist, path.join(save_dir, 'train_plots', f"ep{ep}.png"))
+
+            ddpg_test(year, index, ep, ddpg_agent, training=True)
+
+            last_ep = ep
     except KeyboardInterrupt:
-        print(f'\nEarly stop in episode {ep}')
-        ep -= 1
-
-    if ep > 0:
-        open(path.join(save_dir, f"done_training_in_{ep}_episodes"), 'a').close()
-    else:
+        print(f'\nEarly stop before the end of episode {last_ep + 1}')
         index = None
+    finally:
+        if last_ep > 0:
+            open(path.join(save_dir, f"done_in_{last_ep}_episodes"), 'a').close()
 
-    return index, ep
+    return index, last_ep
 
 
-def ddpg_test(year: int, index, ep, ddpg_agent: DDPGAgent = None):
+def ddpg_test(year: int, index, ep, ddpg_agent: DDPGAgent = None, training=False):
     env = gym.make('DayTrading-v0', df=B3_STOCKS, stock_symbols=top_ten_stocks[str(year)],
                    date_range=(f"{year}-01-01", f"{year}-12-31"), window_length=3)
 
@@ -74,43 +79,47 @@ def ddpg_test(year: int, index, ep, ddpg_agent: DDPGAgent = None):
         return
 
     save_dir, index = __get_save_dir(index=index)
-    train_test = True
 
     if ddpg_agent is None:
-        train_test = False
-
         ddpg_agent = DDPGAgent(env)
         ddpg_agent.load_weights(path.join(save_dir, 'weights', f"ep{ep}"))
 
+    max_step = len(env.df) - 1
     obs = env.reset()
     done = False
-    info = None
+    subtitle = ''
+    progress = ''
+
+    if not training:
+        title = f"Testing {index}"
+        plot_filename = path.join(save_dir, 'portfolio_value_hist.png')
+    else:
+        title = f"Testing {index}: Episode {ep}"
+        plot_filename = path.join(save_dir, 'test_plots', f"ep{ep}.png")
 
     while not done:
         action = ddpg_agent.predict(obs)
         obs, reward, done, info = env.step(action)
 
-    if not train_test:
-        title = f"Testing {index}"
-        subtitle = f"Portfolio value: {info['portfolio_value']}"
-        plot_filename = path.join(save_dir, 'portfolio_value_hist.png')
+        subtitle = f"Portfolio value: {info['portfolio_value']:.5f}"
+        progress = f"{title} {env.step_count}/{max_step} - {subtitle}"
+        print(f"\r{progress}", end='', flush=True)
     else:
-        title = f"Testing {index}: Episode {ep}"
-        subtitle = f"Portfolio value: {info['portfolio_value']}"
-        plot_filename = path.join(save_dir, 'test_plots', f"ep{ep}.png")
+        print('\r', ' ' * len(progress), end='', flush=True)
 
-    print(f"{title} - {subtitle}")
-    __plot(title, subtitle, env.portfolio_value_hist, plot_filename)
+    print(f"\r{title} - {subtitle}")
+
+    __plot(title, subtitle, env.portfolio_value_hist, plot_filename, color='r')
 
 
 def __get_save_dir(out_dir='out.ddpg', index=None):
     makedirs(out_dir, exist_ok=True)
 
     if index is None:
-        dirs = sorted([e for e in listdir(out_dir) if path.isdir(path.join(out_dir, e))])
-        dirs = sorted([d for d in dirs if any('done' in e for e in listdir(path.join(out_dir, d)))])
+        dirs = [e for e in listdir(out_dir) if path.isdir(path.join(out_dir, e)) and e.isdigit()]
+        dirs = sorted([int(d) for d in dirs if any('done' in e for e in listdir(path.join(out_dir, d)))])
 
-        index = '1' if len(dirs) == 0 else str(int(dirs[-1]) + 1)
+        index = '1' if len(dirs) == 0 else str(dirs[-1] + 1)
 
     save_dir = path.join(out_dir, str(index))
     makedirs(save_dir, exist_ok=True)
@@ -118,14 +127,14 @@ def __get_save_dir(out_dir='out.ddpg', index=None):
     return save_dir, index
 
 
-def __plot(title, subtitle, data, filename):
+def __plot(title, subtitle, data, filename, color=None):
     makedirs(path.dirname(filename), exist_ok=True)
 
     plt.suptitle(title, fontsize=12)
     plt.title(subtitle, fontsize=9)
     plt.xticks(rotation=25)
     plt.grid()
-    plt.plot(data)
+    plt.plot(data, color=color)
     plt.savefig(filename)
     plt.show()
     plt.close()

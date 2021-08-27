@@ -1,7 +1,7 @@
 from os import path
 
 import tensorflow.keras as keras
-from tensorflow.keras.layers import LSTM, Dense
+from tensorflow.keras.layers import Dense, LSTM
 
 
 class ActorNetwork(keras.Model):
