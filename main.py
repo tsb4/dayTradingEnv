@@ -56,7 +56,8 @@ def ddpg_train(year: int, episodes: int = 100):
             ddpg_agent.save_weights(path.join(save_dir, 'weights', f"ep{ep}"))
             reward_history.append(info['total_reward'])
 
-            __plot(f"Training {index}: Reward history", '', reward_history, path.join(save_dir, 'reward_history.png'))
+            __plot(f"Training {index}: Reward history", '', reward_history,
+                   path.join(save_dir, 'reward_history.png'), line_y=.0)
             __plot(title, subtitle, env.portfolio_value_hist, path.join(save_dir, 'train_plots', f"ep{ep}.png"))
 
             test_portfolio_values.append(ddpg_test(year, index, ep, ddpg_agent, training=True))
@@ -97,7 +98,7 @@ def ddpg_test(year: int, index, ep, ddpg_agent: DDPGAgent = None, training=False
 
     if not training:
         title = f"Testing {index}"
-        plot_filename = path.join(save_dir, 'portfolio_value_history.png')
+        plot_filename = path.join(save_dir, f"portfolio_value_history.{ep}.png")
     else:
         title = f"Testing {index}: Episode {ep}"
         plot_filename = path.join(save_dir, 'test_plots', f"ep{ep}.png")
@@ -134,14 +135,19 @@ def __get_save_dir(out_dir='out.ddpg', index=None):
     return save_dir, index
 
 
-def __plot(title, subtitle, data, filename, color=None, show=True):
+def __plot(title, subtitle, data, filename, color=None, line_y=1., show=True):
     makedirs(path.dirname(filename), exist_ok=True)
 
     plt.suptitle(title, fontsize=12)
     plt.title(subtitle, fontsize=9)
-    plt.xticks(rotation=25)
-    plt.grid()
+    plt.grid(axis='x', color='whitesmoke')
+    plt.grid(axis='y', which='minor', color='lightgrey')
+    plt.grid(axis='y', which='major', color='grey', linewidth=2)
+    plt.gca().yaxis.set_minor_locator(plt.gca().yaxis.get_major_locator())
+    plt.gca().yaxis.set_minor_formatter(plt.gca().yaxis.get_major_formatter())
+    plt.yticks([line_y])
     plt.plot(data, color=color)
+    plt.margins(0.025, 0.025)
     plt.savefig(filename)
 
     if show:

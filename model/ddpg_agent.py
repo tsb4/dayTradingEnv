@@ -64,7 +64,7 @@ class DDPGAgent:
         self.replay_buffer.append(observation, action, reward, next_observation, done)
 
     def predict(self, observation, add_noise=False):
-        action = tf.gather(self.actor(np.expand_dims(observation, axis=0)), 0)
+        action = tf.gather(self.actor(np.expand_dims(observation, axis=0), training=add_noise), 0)
 
         if add_noise:
             action = tf.clip_by_value(action + self.action_noise(), -1, 1)

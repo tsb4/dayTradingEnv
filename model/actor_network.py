@@ -12,14 +12,14 @@ class ActorNetwork(keras.Model):
         self.__config = {'out_units': out_units, 'lstm_units': lstm_units,
                          'fc1_units': fc1_units, 'fc2_units': fc2_units, 'weights_dir': weights_dir}
 
-        self.noise = GaussianNoise(.1)
+        self.noise = GaussianNoise(.01)
         self.fc1 = Dense(fc1_units, activation='relu')
         self.lstm = LSTM(lstm_units)
         self.fc2 = Dense(fc2_units, activation='relu')
         self.mu = Dense(out_units, activation='tanh')
 
     def call(self, observations, training=None, mask=None):
-        x = self.noise(observations)  # (?, 3, 11) -> (?, 3, 11)
+        x = self.noise(observations, training=training)  # (?, 3, 11) -> (?, 3, 11)
         x = self.fc1(x)  # (?, 3, 11) -> (?, 3, 100)
         x = self.lstm(x)  # (?, 3, 100) -> (?, 100)
         x = self.fc2(x)  # (?, 100) -> (?, 50)
