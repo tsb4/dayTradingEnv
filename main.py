@@ -1,3 +1,14 @@
+#  Reproducible Results  #
+import random as py_random
+
+import numpy as np
+import tensorflow as tf
+
+py_random.seed(3)
+np.random.seed(5)
+tf.random.set_seed(7)
+##########################
+
 from os import makedirs, path, listdir
 
 import gym

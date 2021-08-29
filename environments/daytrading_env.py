@@ -68,11 +68,10 @@ class DayTradingEnv(gym.Env):
         return np.insert(np.concatenate((np.ones((self.W - len(window), self.N - 1)), window), axis=0), 0, 1.0, axis=1)
 
     def __calc_reward(self, action):
-        profit = self.beta * np.dot(self.observation[-1], action)
-        reward = np.log(profit)
+        reward = np.log(self.beta * np.dot(self.observation[-1], action))
 
         self.total_reward += reward
-        self.portfolio_value *= profit
+        self.portfolio_value *= np.dot(([1.0] + [self.beta] * (self.N - 1)) * self.observation[-1], action)
         self.portfolio_value_hist.at[self.df.index[self.step_count]] = self.portfolio_value
         self.action_hist.at[self.df.index[self.step_count]] = action
 

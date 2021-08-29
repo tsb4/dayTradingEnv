@@ -16,7 +16,7 @@ class CriticNetwork(keras.Model):
         self.flatten = Flatten()
         self.fc1_1 = Dense(fc1_units, activation='relu')
         self.fc1_2 = Dense(fc1_units, activation='relu')
-        self.lstm = LSTM(lstm_units)
+        self.lstm = LSTM(lstm_units, dropout=.3)
         self.fc2 = Dense(fc2_units, activation='relu')
         self.q = Dense(1)
 
@@ -28,7 +28,7 @@ class CriticNetwork(keras.Model):
         x = self.fc1_1(x)  # (?, 44) -> (?, 100)
 
         y = self.fc1_2(observations)  # (?, 3, 11) -> (?, 3, 100)
-        y = self.lstm(y)  # (?, 3, 100) -> (?, 100)
+        y = self.lstm(y, training=training)  # (?, 3, 100) -> (?, 100)
 
         x = tf.concat([x, y], 1)  # (?, 100), (?, 100) -> (?, 200)
         x = self.fc2(x)  # (?, 200) -> (?, 50)

@@ -3,7 +3,6 @@ from os import makedirs
 import gym
 import numpy as np
 import tensorflow as tf
-import tensorflow.keras as keras
 from tensorflow.keras.optimizers import Adam
 
 from model.actor_network import ActorNetwork
@@ -75,22 +74,22 @@ class DDPGAgent:
         if len(self.replay_buffer) < self.batch_size:
             return
 
-        observations, actions, rewards, next_observations, dones = self.replay_buffer.sample(self.batch_size)
+        observations, actions, rewards, next_observations, _ = self.replay_buffer.sample(self.batch_size)
 
         with tf.GradientTape() as tape:
-            target_actions = self.target_actor(next_observations)
-            next_critic_values = tf.squeeze(self.target_critic((next_observations, target_actions)), axis=1)
-            critic_values = tf.squeeze(self.critic((observations, actions)), axis=1)
-            target = rewards + self.gamma * next_critic_values * (1 - dones)
-            critic_loss = keras.losses.MSE(target, critic_values)
+            target_actions = self.target_actor(next_observations, training=True)
+            next_critic_values = self.target_critic((next_observations, target_actions), training=True)
+            critic_values = self.critic((observations, actions), training=True)
+            target = rewards + self.gamma * next_critic_values
+            critic_loss = tf.math.reduce_mean(tf.math.square(target - critic_values))
 
         critic_gradient = tape.gradient(critic_loss, self.critic.trainable_variables)
         self.critic.optimizer.apply_gradients(zip(critic_gradient, self.critic.trainable_variables))
 
         with tf.GradientTape() as tape:
-            new_policy_actions = self.actor(observations)
-            actor_loss = -self.critic((observations, new_policy_actions))
-            actor_loss = tf.math.reduce_mean(actor_loss)
+            actions = self.actor(observations, training=True)
+            critic_values = -self.critic((observations, actions), training=True)
+            actor_loss = tf.math.reduce_mean(critic_values)
 
         actor_gradient = tape.gradient(actor_loss, self.actor.trainable_variables)
         self.actor.optimizer.apply_gradients(zip(actor_gradient, self.actor.trainable_variables))
