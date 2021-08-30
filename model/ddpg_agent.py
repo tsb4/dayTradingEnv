@@ -62,10 +62,10 @@ class DDPGAgent:
     def remember(self, observation, action, reward, next_observation, done):
         self.replay_buffer.append(observation, action, reward, next_observation, done)
 
-    def predict(self, observation, add_noise=False):
-        action = tf.gather(self.actor(np.expand_dims(observation, axis=0), training=add_noise), 0)
+    def predict(self, observation, training=False):
+        action = tf.gather(self.actor(np.expand_dims(observation, axis=0), training=training), 0)
 
-        if add_noise:
+        if training:
             action = tf.clip_by_value(action + self.action_noise(), -1, 1)
 
         return action
@@ -78,10 +78,11 @@ class DDPGAgent:
 
         with tf.GradientTape() as tape:
             target_actions = self.target_actor(next_observations, training=True)
-            next_critic_values = self.target_critic((next_observations, target_actions), training=True)
-            critic_values = self.critic((observations, actions), training=True)
+            next_critic_values = \
+                tf.squeeze(self.target_critic((next_observations, target_actions), training=True), axis=1)
+            critic_values = tf.squeeze(self.critic((observations, actions), training=True), axis=1)
             target = rewards + self.gamma * next_critic_values
-            critic_loss = tf.math.reduce_mean(tf.math.square(target - critic_values))
+            critic_loss = tf.keras.losses.MSE(target, critic_values)
 
         critic_gradient = tape.gradient(critic_loss, self.critic.trainable_variables)
         self.critic.optimizer.apply_gradients(zip(critic_gradient, self.critic.trainable_variables))

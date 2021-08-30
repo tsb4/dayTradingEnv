@@ -48,7 +48,7 @@ def ddpg_train(year: int, episodes: int = 100):
             progress = ''
 
             while not done:
-                action = ddpg_agent.predict(observation, add_noise=True)
+                action = ddpg_agent.predict(observation, training=True)
                 next_observation, reward, done, info = env.step(action)
 
                 ddpg_agent.remember(observation, action, reward, next_observation, done)
